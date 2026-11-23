@@ -1,0 +1,22 @@
+# secrets
+research/.env
+.env
+# python
+__pycache__/
+# large intermediate research files
+research/*.log
+research/test_*.json
+
+# ---- private data: real victim sites, never publish ----
+research/*.json
+research/checks/
+preview/findings.js
+preview/evidence.js
+preview/runs.js
+preview/checks.js
+preview/seed.js
+preview/evidence/
+preview/shots/
+preview/v1-backup.html
+design_plan/
+PRODUCT_PLAN.md

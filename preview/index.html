@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiteWatch India</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind config copied from the Stitch "Sovereign Triage Portal" screens (light only) -->
+<script id="tailwind-config">tailwind.config={theme:{extend:{colors:{"primary-container":"#3366cc","on-secondary-container":"#606569","surface-container-highest":"#e3e2e3","on-error":"#ffffff","primary":"#094cb2","surface-container-high":"#e9e8e9","secondary":"#5a5f63","on-background":"#1b1c1d","on-secondary-fixed-variant":"#42474b","tertiary-fixed":"#f9e37a","primary-fixed-dim":"#b1c5ff","inverse-on-surface":"#f2f0f1","secondary-container":"#dfe3e8","tertiary":"#6d5e00","inverse-surface":"#303031","on-tertiary-fixed-variant":"#524600","surface-dim":"#dbdadb","on-primary-fixed":"#001946","surface-tint":"#2259bf","on-tertiary-fixed":"#211b00","surface-bright":"#faf9fa","error":"#ba1a1a","on-primary-fixed-variant":"#00419d","on-secondary-fixed":"#171c20","on-error-container":"#93000a","outline":"#737784","outline-variant":"#c3c6d5","tertiary-container":"#bfab49","background":"#faf9fa","surface-container-low":"#f5f3f4","error-container":"#ffdad6","surface-variant":"#e3e2e3","on-surface-variant":"#434653","on-tertiary-container":"#4a3f00","tertiary-fixed-dim":"#dcc661","surface":"#faf9fa","secondary-fixed":"#dfe3e8","on-primary":"#ffffff","surface-container-lowest":"#ffffff","on-tertiary":"#ffffff","on-primary-container":"#e7ebff","secondary-fixed-dim":"#c2c7cc","on-secondary":"#ffffff","primary-fixed":"#d9e2ff","on-surface":"#1b1c1d","surface-container":"#efedee","inverse-primary":"#b1c5ff"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},fontFamily:{headline:["Noto Serif"],display:["Noto Serif"],body:["Inter"],label:["Public Sans"]}}}}</script>
+<style>
+@layer base{html,body{margin:0;padding:0}body{overscroll-behavior:none}}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400;line-height:1}
+.shadow-xs{box-shadow:0 1px 2px rgba(0,0,0,.05)}
+/* chart marks (Gate Funnel & Rigor) — validated pair: primary blue + orange */
+:root{--series-1:#094cb2;--series-2:#c2410c;--grid:#e3e2e3}
+.chart{position:relative}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font:500 11px/16px "Public Sans",sans-serif;color:#5a5f63;margin-bottom:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.sq{border-radius:2px}
+.hrow{display:grid;grid-template-columns:170px 1fr 44px;gap:8px;align-items:center;margin:6px 0;font:12px/16px Inter,sans-serif}
+.hrow .lbl{color:#5a5f63;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,monospace;font-size:11px}
+.hrow .val{font-variant-numeric:tabular-nums}
+.track{position:relative;height:18px}
+.dot{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--series-1);box-shadow:0 0 0 2px #fff}
+.dot.hollow{background:#fff;border:2px solid var(--series-1)}
+.dot::after{content:"";position:absolute;inset:-8px}
+.tline{position:absolute;top:50%;height:2px;margin-top:-1px;background:var(--grid)}
+.thr{position:absolute;top:-4px;bottom:-4px;width:0;border-left:1px dashed #737784}
+.axis{position:relative;height:18px;font-size:11px;color:#5a5f63}
+.axis span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.stack{position:absolute;left:0;top:3px;height:12px;display:flex;gap:2px}
+.stack span{height:12px;background:var(--series-1)}
+.stack span.o{background:var(--series-2)}
+.stack span:last-child{border-radius:0 4px 4px 0}
+.matrix{border-collapse:separate;border-spacing:3px}
+.matrix th.c{writing-mode:vertical-rl;transform:rotate(180deg);font:500 11px/14px "Public Sans",sans-serif;padding:4px 0;height:150px;text-align:left;color:#5a5f63}
+.matrix td.n{font-size:12px;padding-right:8px;white-space:nowrap}
+.cell{width:22px;height:22px;border-radius:4px;display:block}
+.cell.t{background:var(--series-1)}
+.cell.f{border:1.5px solid #737784;opacity:.55}
+.cell.p{background:repeating-linear-gradient(45deg,var(--grid) 0 2px,transparent 2px 5px);border:1px solid var(--grid)}
+#tip{position:fixed;z-index:90;pointer-events:none;background:#fff;color:#1b1c1d;border-radius:8px;padding:6px 10px;font:12px/16px Inter,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.15);display:none;max-width:280px;white-space:pre-line}
+@media (max-width:640px){.hrow{grid-template-columns:100px 1fr 36px}}
+@media print{
+ aside,header,#drawer,#scrim,#modal,.noprint{display:none!important}
+ .lg\:pl-72{padding-left:0!important} main{padding-top:0!important}
+ body.print-dossier main *:not(#dossier):not(#dossier *):not(:has(#dossier)){display:none!important}
+}
+</style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- Sidebar (from the reference screens) -->
+<aside id="side" class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between py-6 shadow-[0_1px_8px_rgba(0,0,0,0.03)] -translate-x-full lg:translate-x-0 transition-transform duration-200" aria-label="Main navigation">
+ <div class="flex flex-col gap-6">
+  <div class="px-6 flex items-center gap-3">
+   <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[20px]">security</span></div>
+   <div><div class="font-headline font-semibold text-base tracking-tight text-on-surface leading-tight">SiteWatch India</div><div class="font-label text-[10px] tracking-wider uppercase text-secondary font-medium">Sovereign Triage Portal</div></div>
+  </div>
+  <div id="nav">
+   <div class="px-6">
+    <div class="text-[11px] font-label font-semibold uppercase tracking-wider text-secondary mb-2">Surveillance Sections</div>
+    <nav class="space-y-1">
+     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="matrix" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-medium">Surveillance Matrix</span></a>
+     <a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="leads" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px]">warning</span><span class="font-medium">Compromised Leads</span></div><span id="cntLeads" class="hidden inline-flex items-center justify-center px-2 py-0.5 text-xs font-label font-bold rounded-full bg-error-container text-on-error-container"></span></a>
+     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="check" href="#"><span class="material-symbols-outlined text-[20px]">travel_explore</span><span class="font-medium">Site Check</span></a>
+     <a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="followups" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px]">forward_to_inbox</span><span class="font-medium">Follow-ups</span></div><span id="cntFollow" class="hidden inline-flex items-center justify-center px-2 py-0.5 text-xs font-label font-bold rounded-full bg-error-container text-on-error-container" title="Due today or overdue"></span></a>
+     <a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="gates" href="#"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-[20px]">filter_alt</span><span class="font-medium">Gate Funnel &amp; Rigor</span></div><span id="cntQueue" class="hidden inline-flex items-center justify-center px-2 py-0.5 text-xs font-label font-bold rounded-full bg-surface-container-high text-on-surface-variant" title="Waiting for review"></span></a>
+     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="synd" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span class="font-medium">Syndicate Tracking</span></a>
+     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="outreach" href="#"><span class="material-symbols-outlined text-[20px]">campaign</span><span class="font-medium">CERT-In Outreach</span></a>
+     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="reports" href="#"><span class="material-symbols-outlined text-[20px]">monitoring</span><span class="font-medium">Search Reports</span></a>
+    </nav>
+   </div>
+   <div class="px-6 mt-6">
+    <div class="text-[11px] font-label font-semibold uppercase tracking-wider text-secondary mb-2">Configuration</div>
+    <nav class="space-y-1">
+     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-nav="settings" href="#"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-medium">System Settings</span></a>
+    </nav>
+   </div>
+  </div>
+ </div>
+ <div class="px-6">
+  <div class="p-3.5 rounded-xl bg-surface-container flex items-center justify-between">
+   <div class="flex items-center gap-3 min-w-0"><div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div>
+    <div class="min-w-0"><div class="text-xs font-semibold text-on-surface truncate">You</div><div class="text-[11px] text-secondary font-label truncate">Local workspace · browser storage</div></div></div>
+   <span class="material-symbols-outlined text-on-surface-variant text-[18px]">verified_user</span>
+  </div>
+ </div>
+</aside>
+
+<div class="lg:pl-72">
+ <!-- Top bar (from the reference screens) -->
+ <header class="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between gap-3 px-4 sm:px-8">
+  <div class="flex items-center gap-4 min-w-0">
+   <button id="menuBtn" class="lg:hidden w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center shrink-0" aria-label="Open menu"><span class="material-symbols-outlined text-[20px]">menu</span></button>
+   <button id="engineBtn" class="hidden md:flex items-center gap-2 rounded-lg px-1 hover:bg-surface-container" title="Search status"><span id="engineDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span id="engineTxt" class="text-xs font-label font-semibold uppercase tracking-wider text-secondary whitespace-nowrap truncate max-w-[280px]">Engine: Verification Ready</span></button>
+   <div class="hidden md:block h-4 w-[1px] bg-outline-variant opacity-40"></div>
+   <div class="hidden sm:flex items-center gap-2"><span class="text-xs font-label text-secondary">Last scan:</span><span id="lastScan" class="text-xs font-mono font-medium text-on-surface bg-surface-container-high px-2 py-0.5 rounded-lg"></span></div>
+  </div>
+  <div class="flex items-center gap-3 sm:gap-5 min-w-0">
+   <label class="flex items-center gap-2 bg-surface-container-lowest px-3 py-1.5 rounded-lg text-xs font-label text-secondary shadow-[0_1px_4px_rgba(0,0,0,0.02)] min-w-0">
+    <span class="material-symbols-outlined text-[16px]">search</span>
+    <input id="gsearch" type="search" class="bg-transparent focus:outline-none text-on-surface placeholder:text-secondary w-24 sm:w-52" placeholder="Search domain, business, phone..." aria-label="Search sites">
+    <kbd class="hidden sm:inline bg-surface-container-high text-on-surface px-1.5 py-0.5 rounded text-[10px] font-mono">⌘K</kbd>
+   </label>
+   <button id="jurBtn" class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed shrink-0" title="Switch India / Global scope"></button>
+   <span id="statusBadge" class="hidden xl:inline-flex items-center px-2.5 py-1 rounded-full bg-error-container text-on-error-container text-xs font-label font-bold"></span>
+   <div class="hidden sm:flex w-8 h-8 rounded-full bg-primary items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div>
+  </div>
+ </header>
+ <main id="main" class="relative pt-16 bg-surface min-h-screen"></main>
+</div>
+
+<!-- Deep-dive drawer, scrim, modal, tooltip -->
+<div id="scrim" class="hidden fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-[55]"></div>
+<aside id="drawer" class="fixed top-0 right-0 h-full w-full sm:w-[520px] bg-surface-container-lowest shadow-xl flex flex-col z-[60] translate-x-full transition-transform duration-300" aria-label="Target deep-dive inspector"></aside>
+<div id="modal" class="hidden fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-[70] items-center justify-center p-4 sm:p-6"></div>
+<div id="tip" role="tooltip"></div>
+
+<script src="findings.js"></script>
+<script src="evidence.js"></script>
+<script src="runs.js"></script>
+<script src="checks.js"></script>
+<script src="seed.js"></script>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

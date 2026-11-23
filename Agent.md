@@ -166,4 +166,5 @@ Note: the 906-site results were computed before this fix; short-page spam sites 
 ## Open source (2026-11-23)
 - Private data (victim lists, screenshots, seed sites, plan) is git-ignored; seed sites live in local `preview/seed.js` and `research/seeds.json`.
 - `README.md` — what it is, why (help owners clean hacked sites), quick start, how it finds/decides, owner cleanup checklist, responsible use, limits.
+- `start.sh` (macOS/Linux, picks the first python3/python that is 3.10+, opens the browser with open/xdg-open) mirrors `start.bat`. `.gitattributes` keeps LF for .sh, CRLF for .bat.
 - `LICENSE` — MIT. `requirements.txt` — duckdb, playwright (`python -m playwright install chromium`).

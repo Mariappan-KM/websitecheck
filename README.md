@@ -68,14 +68,50 @@ python server.py
 
 Open 👉 **http://127.0.0.1:8790**
 
-> 🪟 **Windows shortcut:** just double-click **`start.bat`**. It starts the server and opens the browser.
+### ⚡ One-click start
+
+| OS | How |
+|---|---|
+| 🪟 **Windows** | Double-click **`start.bat`** |
+| 🍎 **macOS** | `chmod +x start.sh` (first time only), then `./start.sh` |
+| 🐧 **Linux / Ubuntu** | `chmod +x start.sh` (first time only), then `./start.sh` |
+
+All of them start the server and open your browser. Press `Ctrl+C` to stop.
+
+<details>
+<summary><b>🐧 Ubuntu / Debian setup from scratch</b></summary>
+
+```bash
+sudo apt update && sudo apt install -y python3 python3-pip python3-venv git
+git clone https://github.com/Mariappan-KM/websitecheck.git && cd websitecheck
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m playwright install --with-deps chromium
+./start.sh
+```
+
+</details>
+
+<details>
+<summary><b>🍎 macOS setup from scratch (Intel and Apple Silicon)</b></summary>
+
+```bash
+brew install python git            # needs Homebrew: https://brew.sh
+git clone https://github.com/Mariappan-KM/websitecheck.git && cd websitecheck
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m playwright install chromium
+chmod +x start.sh && ./start.sh
+```
+
+</details>
 
 <details>
 <summary><b>More options</b></summary>
 
 | Need | How |
 |---|---|
-| Use another port | `SITEWATCH_PORT=9000 python server.py` · PowerShell: `$env:SITEWATCH_PORT=9000; python server.py` |
+| Use another port | `SITEWATCH_PORT=9000 ./start.sh` (Mac/Linux) · PowerShell: `$env:SITEWATCH_PORT=9000; python server.py` |
 | Stop the server | Press `Ctrl+C` in the server window |
 | Just browse saved results | Open `preview/index.html` directly (Search and Site Check need the server) |
 | Better discovery (optional) | Get a **free** [urlscan.io](https://urlscan.io) key and put `URLSCAN_API_KEY=...` in `research/.env` (git-ignored, never commit it) |
@@ -190,6 +226,7 @@ This tool deals with **real businesses and real people**. Please:
 websitecheck/
 ├── server.py            local web server + API (Search, Site Check, reports)
 ├── start.bat            Windows one-click launcher
+├── start.sh             macOS / Linux one-click launcher
 ├── requirements.txt     duckdb, playwright
 ├── preview/             the web app (index.html, core.js, app.js) + data it reads
 ├── research/            collectors, verifier, screenshots, single-site checker

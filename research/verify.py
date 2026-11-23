@@ -362,7 +362,7 @@ def post_check(r, cand):
         r["verdict"], r["state"], r["isp_blocked"] = "Blocked by ISP as dangerous", "hacked_visible", True
     if r["domain"] in PLATFORM_HOSTS or host.endswith(PLATFORM_HOSTS):
         r["verdict"], r["state"] = "Not a lead (hosting platform subdomain)", "excluded"
-    # spammer-owned: the domain name itself appears in the spam brand (e.g. kumbang78.com -> "KUMBANG78")
+    # spammer-owned: the domain name itself appears in the spam brand (e.g. luckyspin99-demo.com -> "LUCKYSPIN99")
     label = re.sub(r"[^a-z0-9]", "", r["domain"].split(".")[0])
     if (not r["verdict"].startswith("Not a lead (foreign") and len(label) >= 5 and label in re.sub(r"[^a-z0-9]", "", (cand.get("title") or "").lower()) and not r.get("home_is_business")
             and (r.get("home_lang") in FOREIGN or similar(r.get("home_title") or "", cand.get("title") or "") >= 0.4)):

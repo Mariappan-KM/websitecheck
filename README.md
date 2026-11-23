@@ -12,7 +12,7 @@
 
 **Free · Open source · Runs on your laptop · No AI subscription · No paid API**
 
-[Quick start](#-quick-start) · [How to use](#-how-to-use) · [How it works](#-how-it-works) · [Fix a hacked site](#-how-owners-can-fix-a-hacked-site) · [Responsible use](#-responsible-use)
+[Quick start](#-quick-start) · [How to use](#-how-to-use) · [How it works](#-how-it-works) · [Fix a hacked site](#-how-owners-can-fix-a-hacked-site) · [Responsible use](#-responsible-use) · [Fork & improve](#-fork-it--help-improve-it)
 
 </div>
 
@@ -203,16 +203,55 @@ websitecheck/
 - Indian **`.com`** sites can't be found by the domain ending alone.
 - The Wayback Machine and RDAP are sometimes slow, which can turn a result into *Review*. Just re-check later.
 
-## 🌱 Contributing
+## 🍴 Fork it & help improve it
 
-Contributions are very welcome! Good places to start:
+**This project gets better with every person who helps.** Each improvement means more hacked business websites found and fixed. You don't need to be an expert: if you can run Python, you can help.
 
-- 🧪 New detection signals, or ways to **reduce false positives**
-- 🌍 Support for **other countries and languages**
-- 📖 Cleanup guides for more platforms (Joomla, Drupal, Magento …)
-- 🎨 UI improvements and accessibility
+### 🙌 Ways to help
 
-Fork the repo, create a branch, and open a pull request. When you report a wrong verdict, explain **why** the logic got it wrong, and share real victim sites **privately**, not in public issues.
+| You are… | You can… |
+|---|---|
+| 🐍 **A developer** | Add detection signals, cut false positives, speed up the crawler, write tests |
+| 🌍 **From another country** | Adapt it for your country's domains (`.id`, `.lk`, `.bd`, `.pk`, `.ng` …) and languages |
+| 🔐 **A security person** | Share new hack patterns (cloaking tricks, injected files, redirect chains) |
+| 🎨 **A designer** | Improve the UI, mobile layout and accessibility |
+| ✍️ **A writer** | Write cleanup guides for WordPress, Joomla, Drupal, Magento, cPanel and Plesk, or translate them into Hindi, Tamil or other languages |
+| 🧪 **A user** | Run it, report wrong verdicts, and suggest features |
+
+### 🛠️ How to contribute (5 steps)
+
+1. **Fork** this repo (the **Fork** button at the top right of GitHub).
+2. **Clone** your fork and create a branch:
+   ```bash
+   git clone https://github.com/<your-username>/websitecheck.git
+   cd websitecheck
+   git checkout -b improve-detection
+   ```
+3. **Make your change** and test it: run `python server.py`, then check a few sites with **Site Check**.
+4. **Commit and push** to your fork:
+   ```bash
+   git commit -am "Detect hidden spam in sitemap pages"
+   git push origin improve-detection
+   ```
+5. Open a **Pull Request** and explain what you changed and why. 🎉
+
+### 💡 Good first ideas
+
+- [ ] Detect English-language casino and pharma spam (not just Indonesian, Thai and Vietnamese)
+- [ ] Find Indian `.com` sites (by hosting in India, `+91` phone numbers, Indian addresses)
+- [ ] Store follow-ups in a shared file or SQLite so a team can work together
+- [ ] A one-page PDF report to send to the site owner
+- [ ] A scheduled daily search (cron / Task Scheduler)
+- [ ] Unit tests for `verify.py` (language guess, the gates, the guards)
+- [ ] A Docker image for one-command setup
+
+### 📏 Simple rules
+
+- Keep it **free and local**: no paid APIs and no paid AI.
+- **False positives matter most.** A new signal must not mark clean sites as hacked. Explain how you tested it.
+- **Never commit real victim data** (site lists, screenshots, contact details). `.gitignore` already blocks the usual files; please keep it that way.
+- When you report a wrong verdict, explain **why** the logic got it wrong, and share real victim sites **privately**, not in public issues.
+- Be kind in issues and reviews. We're all here to help website owners.
 
 ## 📜 License
 
@@ -222,6 +261,6 @@ Released under the **[MIT License](LICENSE)**: free to use, copy, modify and sha
 
 <div align="center">
 
-**If this project helps a business get its website back, give it a ⭐**
+**If this project helps a business get its website back, give it a ⭐ and fork it to make it better 🍴**
 
 </div>

@@ -14,6 +14,12 @@
 
 [Quick start](#-quick-start) · [How to use](#-how-to-use) · [How it works](#-how-it-works) · [Fix a hacked site](#-how-owners-can-fix-a-hacked-site) · [Responsible use](#-responsible-use) · [Fork & improve](#-fork-it--help-improve-it)
 
+<br/>
+
+<img src="docs/demo.gif" alt="SiteWatch demo: overview, leads, site check, evidence, follow-ups, reports, AI helper, search" width="900"/>
+
+<sub>Demo with made-up sites (names end in <code>-demo.in</code>). No real victims are shown.</sub>
+
 </div>
 
 ---
@@ -47,6 +53,18 @@ Thousands of small Indian business websites (`.in`, `.co.in`, `.ac.in`, `.gov.in
 - 🤖 **Optional AI helper:** a free local LLM (Ollama) or any OpenAI-compatible server gives a second opinion and reads owner details. Off by default
 - 💻 **One local app:** a dashboard, Site Check, Leads, Follow-ups, Rules, Reports and charts
 - 📦 **Easy to share:** zip the folder, and the other person runs `python server.py`
+
+---
+
+## 📸 Screenshots
+
+| | |
+|---|---|
+| <img src="docs/screens/4-site-check.png" alt="Site Check result"/><br/>**Site Check**: type any website, get the verdict and the 4 gates | <img src="docs/screens/5-evidence.png" alt="Before and after evidence"/><br/>**Evidence**: archived business vs today's spam, owner contact, follow-up |
+| <img src="docs/screens/3-inspect.png" alt="Leads with inspector"/><br/>**Leads**: filter, score and inspect every site | <img src="docs/screens/6-followups.png" alt="Follow-ups"/><br/>**Follow-ups**: overdue, due today, upcoming |
+| <img src="docs/screens/7-reports.png" alt="Search reports"/><br/>**Search reports**: what each search looked at and found | <img src="docs/screens/8-ai-helper.png" alt="AI helper settings"/><br/>**AI helper**: optional local LLM, off by default |
+
+> Rebuild the demo yourself with `python docs/make_demo.py`. It uses only made-up data.
 
 ---
 

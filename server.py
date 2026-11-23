@@ -6,6 +6,7 @@ Serves the dashboard in preview/ and three local endpoints the dashboard uses:
     GET  /api/defaults   default search values (latest Common Crawl month etc.)
     POST /api/search     start a search run (one at a time)
     GET  /api/status     progress of the current / last run
+    GET/POST /api/llm    optional LLM settings (research/llm.json), POST /api/llm-test checks the connection
 Only listens on 127.0.0.1, so only this computer can reach it.
 """
 import json, os, re, subprocess, sys, threading, time, urllib.request
@@ -14,6 +15,8 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PREVIEW = os.path.join(ROOT, "preview")
 RESEARCH = os.path.join(ROOT, "research")
+sys.path.insert(0, RESEARCH)
+import llm as L
 HOST, PORT = "127.0.0.1", int(os.environ.get("SITEWATCH_PORT", "8790"))
 LANG_CHOICES = {"ind": "Indonesian", "tha": "Thai", "vie": "Vietnamese", "msa": "Malay", "jpn": "Japanese", "zho": "Chinese"}
 
@@ -33,11 +36,16 @@ def latest_crawl():
     return _latest_crawl["id"]
 
 def defaults():
-    return {"sources": {"commoncrawl": True, "snowball": True, "urlscan": False},
+    return {"sources": {"commoncrawl": True, "snowball": True, "assets": True, "sameip": False, "urlscan": False},
             "urlscan_key": os.path.exists(os.path.join(RESEARCH, ".env")),
             "crawl": latest_crawl(), "langs": ["ind", "tha", "vie", "msa"], "lang_choices": LANG_CHOICES,
-            "tld": "in", "max_domains": 400, "per_brand": 60, "new_only": True, "capture": True,
+            "tld": "in", "max_domains": 400, "per_brand": 60, "max_hosts": 30, "max_neighbours": 300,
+            "sameip_cached": os.path.exists(os.path.join(RESEARCH, "dns_cache.json")), "llm": llm_public(), "new_only": True, "capture": True,
             "since": time.strftime("%Y-%m-%d"), "recheck_issues": False}
+
+def llm_public():
+    c = L.config()
+    return {**c, "api_key": "••••" + c["api_key"][-4:] if c["api_key"] else "", "enabled": L.enabled()}
 
 def verify_busy():
     return os.path.exists(os.path.join(RESEARCH, ".verify.lock"))
@@ -107,8 +115,12 @@ def job(params):
         if m: report["looked_at"]["commoncrawl_domains"] = int(m.group(1)); report["sources"]["commoncrawl"] = int(m.group(2))
         m = re.search(r"(\d+) brands from", line)
         if m: report["looked_at"]["snowball_brands"] = int(m.group(1))
-        m = re.search(r"candidates_snowball\.json: (\d+) new domains", line)
-        if m: report["sources"]["snowball"] = int(m.group(1))
+        m = re.search(r"candidates_(snowball|assets|sameip)\.json: (\d+) new domains", line)
+        if m: report["sources"][m.group(1)] = int(m.group(2))
+        m = re.search(r"(\d+) spam hosts found, searching (\d+)", line)
+        if m: report["looked_at"]["spam_hosts"] = int(m.group(1))
+        m = re.search(r"(\d+) victims, (\d+) share a server with other domains -> (\d+) neighbours", line)
+        if m: report["looked_at"]["neighbours"] = int(m.group(3))
         m = re.search(r"(\d+) to verify \((\d+) skipped", line)
         if m: report["skipped_known"] = int(m.group(2))
         if re.match(r"\[\d+/\d+\] error:", line): report["errors"] += 1
@@ -125,6 +137,12 @@ def job(params):
         if params["sources"].get("snowball"):
             run_step("Snowball from spam brands", [py, "snowball.py", str(params["per_brand"])], parse)
             files.append("candidates_snowball.json")
+        if params["sources"].get("assets"):
+            run_step("Shared spam files (urlscan)", [py, "collect_assets.py", str(params["max_hosts"])], parse)
+            files.append("candidates_assets.json")
+        if params["sources"].get("sameip"):
+            run_step("Same-server neighbours", [py, "collect_sameip.py", params["crawl"], str(params["max_neighbours"]), "--tld=" + params["tld"]], parse)
+            files.append("candidates_sameip.json")
         if not files and not params["recheck_issues"]:
             raise RuntimeError("No source selected")
         merged = []
@@ -232,7 +250,7 @@ def validate(body):
     p = {"sources": {k: bool(body.get("sources", {}).get(k, v)) for k, v in d["sources"].items()},
          "crawl": str(body.get("crawl") or d["crawl"]), "langs": [l for l in body.get("langs", d["langs"]) if l in LANG_CHOICES],
          "tld": str(body.get("tld") or "in").lower().strip("."), "max_domains": int(body.get("max_domains", 400)),
-         "per_brand": int(body.get("per_brand", 60)), "new_only": bool(body.get("new_only", True)), "capture": bool(body.get("capture", True)),
+         "per_brand": int(body.get("per_brand", 60)), "max_hosts": int(body.get("max_hosts", 30)), "max_neighbours": int(body.get("max_neighbours", 300)), "new_only": bool(body.get("new_only", True)), "capture": bool(body.get("capture", True)),
          "since": str(body.get("since") or ""), "recheck_issues": bool(body.get("recheck_issues", False))}
     errs = []
     if not re.fullmatch(r"CC-MAIN-\d{4}-\d{2}", p["crawl"]): errs.append("Crawl must look like CC-MAIN-2026-43")
@@ -240,7 +258,9 @@ def validate(body):
     if not re.fullmatch(r"[a-z]{2,10}", p["tld"]): errs.append("Domain ending must be letters, e.g. in")
     if not 1 <= p["max_domains"] <= 3000: errs.append("Max domains must be 1–3000")
     if not 1 <= p["per_brand"] <= 200: errs.append("Sites per brand must be 1–200")
-    if not (p["sources"]["commoncrawl"] or p["sources"]["snowball"] or p["recheck_issues"]): errs.append("Pick at least one source")
+    if not 1 <= p["max_hosts"] <= 200: errs.append("Spam files to search must be 1–200")
+    if not 1 <= p["max_neighbours"] <= 5000: errs.append("Neighbours must be 1–5000")
+    if not (any(v for k, v in p["sources"].items() if k != "urlscan") or p["recheck_issues"]): errs.append("Pick at least one source")
     if p["since"] and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", p["since"]): errs.append("Since must be a date like 2026-11-22")
     if p["sources"]["urlscan"] and not d["urlscan_key"]: errs.append("urlscan needs a free API key in research/.env")
     return p, errs
@@ -264,6 +284,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/defaults"): return self.send_json(defaults())
         if self.path.startswith("/api/runs"): return self.send_json(load_runs())
+        if self.path.startswith("/api/llm"): return self.send_json(llm_public())
         if self.path.startswith("/api/check-status"):
             with check_lock: return self.send_json(dict(check))
         if self.path.startswith("/api/checks"): return self.send_json(load_checks())
@@ -275,9 +296,25 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if not (self.path.startswith("/api/search") or self.path.startswith("/api/check")): return self.send_json({"error": "not found"}, 404)
+        if not (self.path.startswith("/api/search") or self.path.startswith("/api/check") or self.path.startswith("/api/llm")): return self.send_json({"error": "not found"}, 404)
         if self.headers.get("Origin") not in (None, f"http://{HOST}:{PORT}", f"http://localhost:{PORT}"):
             return self.send_json({"error": "forbidden origin"}, 403)       # block other websites from starting runs
+        if self.path.startswith("/api/llm-test"): return self.send_json(L.test())
+        if self.path.startswith("/api/llm"):
+            try: body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) or b"{}")
+            except Exception: return self.send_json({"error": "bad JSON"}, 400)
+            c = L.config()
+            prov = str(body.get("provider") or "none")
+            if prov not in ("none", "ollama", "openai"): return self.send_json({"error": "provider must be none, ollama or openai"}, 400)
+            url = str(body.get("url") or c["url"]).strip()
+            if not re.fullmatch(r"https?://[^\s]+", url): return self.send_json({"error": "URL must start with http:// or https://"}, 400)
+            key = str(body.get("api_key") or "")
+            c.update(provider=prov, url=url, model=str(body.get("model") or c["model"]).strip()[:100],
+                     api_key=c["api_key"] if key.startswith("••••") else key.strip())          # masked value = keep the saved key
+            try: c["timeout"] = max(10, min(600, int(body.get("timeout") or c["timeout"])))
+            except ValueError: pass
+            L.save_config(c)
+            return self.send_json(llm_public())
         if self.path.startswith("/api/check"):
             try: body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) or b"{}")
             except Exception: return self.send_json({"error": "bad JSON"}, 400)

@@ -102,7 +102,7 @@ function fromFinding(f){
  const brand=((f.urlscan_title||"").match(/[A-Z][A-Z0-9]{3,}/)||[""])[0];
  const g=f.gates||{};
  return {domain:f.domain,tld:f.domain.endsWith(".co.in")?"co.in":f.domain.split(".").pop(),india:f.india,indiaSignals:f.india_signals,
-  business:{name:cleanName(f.business_title),category:"",city:place,phone:(f.phones||[])[0]||"",email:(f.emails||[])[0]||"",
+  business:{name:cleanName(f.business_title)||(f.llm_business||{}).name||"",category:(f.llm_business||{}).category||"",city:place||(f.llm_business||{}).city||"",phone:(f.phones||[])[0]||"",email:(f.emails||[])[0]||"",
    source:f.home_is_business?"Live homepage (owner's site still up)":(f.last_clean||hh.last_clean)?"Wayback "+ymd(f.last_clean||hh.last_clean):""},
   platform:f.platform,likelyCause:"",campaign:brand,visibleSpam:!(f.inner_page&&f.home_is_business)&&!f.spam_only_for_google_or_mobile,
   registered:f.rdap_registered||"",
@@ -125,7 +125,7 @@ function fromFinding(f){
   proof:[f.urlscan_result&&{label:f.source==="commoncrawl"?`Common Crawl capture ${f.urlscan_time} (foreign-language page)`:`urlscan scan ${f.urlscan_time} (spam live)`,url:f.urlscan_result},f.urlscan_screenshot&&{label:"urlscan screenshot",url:f.urlscan_screenshot},
    (f.last_clean||hh.last_clean)&&{label:`Wayback clean copy ${ymd(f.last_clean||hh.last_clean)}`,url:`https://web.archive.org/web/${f.last_clean||hh.last_clean}/${f.page_url}`}].filter(Boolean),
   firstSeen:f.urlscan_time,lastChecked:f.checked,source:"urlscan · "+f.verdict,
-  verdict:f.verdict,pageStatus:f.page_status,homeStatus:f.home_status};
+  verdict:f.verdict,pageStatus:f.page_status,homeStatus:f.home_status,llm:f.llm,llmNote:f.llm_note,via:f.via||f.asset_host||""};
 }
 // results of the big searches (findings.js) + single-site checks (checks.js; a newer check overrides)
 let CHECKS_DATA=window.CHECKS||[];

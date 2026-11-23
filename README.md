@@ -32,7 +32,7 @@ Thousands of small Indian business websites (`.in`, `.co.in`, `.ac.in`, `.gov.in
 
 | | |
 |---|---|
-| 🔎 **Discover** | Scans the free monthly public web crawl (Common Crawl) for Indian sites that show foreign-language spam |
+| 🔎 **Discover** | 4 free sources: the public web crawl, spam brands, shared spam files, and same-server neighbours |
 | ✅ **Verify** | 4 independent checks before anything is called "hacked". Few false alarms |
 | 📸 **Prove** | Before/after screenshots: the clean archived copy next to today's spam |
 | 📇 **Contact** | Collects only the contact details the owner **published themselves** |
@@ -44,6 +44,7 @@ Thousands of small Indian business websites (`.in`, `.co.in`, `.ac.in`, `.gov.in
 - 🌐 **Any platform:** WordPress, Joomla, Drupal, custom PHP, static sites and more
 - 🕵️ **Catches hidden hacks:** fetches every page as a browser, as Googlebot, as a mobile browser and with a Google referrer
 - 🧩 **Dynamic, not a static keyword list:** it notices when a page's language doesn't belong to the site and learns spam brand names from real victims
+- 🤖 **Optional AI helper:** a free local LLM (Ollama) or any OpenAI-compatible server gives a second opinion and reads owner details. Off by default
 - 💻 **One local app:** a dashboard, Site Check, Leads, Follow-ups, Rules, Reports and charts
 - 📦 **Easy to share:** zip the folder, and the other person runs `python server.py`
 
@@ -148,6 +149,8 @@ Run these from the `research/` folder:
 ```bash
 python collect_commoncrawl.py CC-MAIN-2026-43 400 --langs=ind,tha,vie,msa --tld=in   # discover
 python snowball.py                                                                  # same spam brand on other sites
+python collect_assets.py 30                                                         # sites loading the same spam files
+python collect_sameip.py CC-MAIN-2026-43 300 --tld=in                               # other sites on a victim's server
 python verify.py candidates_new.json --new-only                                     # 4-gate verification
 python capture.py                                                                   # screenshots
 python check_site.py https://example.in/some-page                                   # one site, full report
@@ -165,14 +168,41 @@ python check_site.py https://example.in/some-page                               
 flowchart LR
     A[🌐 Common Crawl<br/>.in pages] -->|foreign-language<br/>pages| C[Suspects]
     B[🔁 Snowball<br/>known spam brands] --> C
+    AS[🧷 Shared spam files<br/>same images / scripts] --> C
+    SI[🖥️ Same-server<br/>neighbours] --> C
     U[👤 Site Check<br/>your URL] --> C
     C --> V{✅ 4 gates}
+    V -.->|optional| AI[🤖 AI second opinion<br/>can only move to Review]
     V -->|all pass| H[🚨 Hacked — confirmed]
     V -->|some pass| R[🟡 Review / seen once]
     V -->|no business /<br/>foreign site| N[⚪ Not a lead]
     H --> S[📸 Screenshots + contacts]
     S --> F[📅 Follow-ups]
 ```
+
+### Where suspects come from
+
+| Source | How it works | Cost |
+|---|---|---|
+| 🌐 **Common Crawl** | `.in` pages whose main language is Indonesian, Thai, Vietnamese or Malay in the free monthly crawl | Free |
+| 🔁 **Snowball** | Spam brand names on confirmed victims (`SLOT88` …) → other pages with the same brand (urlscan public search) | Free |
+| 🧷 **Shared spam files** | The spam loads images and scripts from the spammer's own hosts. Other sites that load the same files are in the same campaign (urlscan public search). Only pages with a spam-language title are kept | Free |
+| 🖥️ **Same-server neighbours** | Look up the IP of every `.in` domain once (DNS, cached 30 days), then check the other sites on each victim's server. Big shared IPs (more than 50 sites) are skipped | Free. First run ≈ 1 hour |
+
+> Victim spam pages rarely link to each other (we tested this), so "following spam links" is **not** a source. The spam files they load are.
+
+### 🤖 AI helper (optional, off by default)
+
+Turn it on in **Settings → AI helper**. You can use:
+- **Ollama (free, local):** install from [ollama.com](https://ollama.com), run `ollama pull llama3.2`, and choose *Ollama*. It runs fine on an Apple Silicon Mac.
+- **Any OpenAI-compatible server:** LM Studio, llama.cpp, vLLM, or a paid API with your own key.
+
+| What it does | Safety rule |
+|---|---|
+| Second opinion on each page, including **English** casino, pharma and loan spam that the language check misses | It can move a site **to Review**, never to *Confirmed*. The 4 gates still decide |
+| Reads the owner's name, category and city from the site's own text | Phone and email are kept **only if they appear word for word** on the page, so invented contact details are dropped |
+
+Settings are saved in `research/llm.json` (git-ignored). Your API key never goes into the page or the repo.
 
 ### The 4 gates
 
@@ -229,14 +259,15 @@ websitecheck/
 ├── start.sh             macOS / Linux one-click launcher
 ├── requirements.txt     duckdb, playwright
 ├── preview/             the web app (index.html, core.js, app.js) + data it reads
-├── research/            collectors, verifier, screenshots, single-site checker
+├── research/            collectors, verifier, screenshots, single-site checker, llm.py (optional AI)
 └── Agent.md             detailed design and logic notes
 ```
 
 ## ⚠️ Limits
 
 - Common Crawl is a **sample**: about 220,000 `.in` domains per monthly crawl, not every registered site.
-- **English-language spam** is caught only by the snowball step and Site Check.
+- **English-language spam** is caught only by the snowball step, Site Check, and the optional AI helper.
+- New suspects from *shared spam files* and *same-server* are seen once on the day of the search, so they stay in *Review / seen once* until a re-check on another day.
 - Indian **`.com`** sites can't be found by the domain ending alone.
 - The Wayback Machine and RDAP are sometimes slow, which can turn a result into *Review*. Just re-check later.
 
@@ -274,7 +305,8 @@ websitecheck/
 
 ### 💡 Good first ideas
 
-- [ ] Detect English-language casino and pharma spam (not just Indonesian, Thai and Vietnamese)
+- [ ] Detect English-language spam without the AI helper (rules for casino, pharma and loan pages)
+- [ ] A faster same-server source (reverse-IP data) and Certificate Transparency logs (crt.sh)
 - [ ] Find Indian `.com` sites (by hosting in India, `+91` phone numbers, Indian addresses)
 - [ ] Store follow-ups in a shared file or SQLite so a team can work together
 - [ ] A one-page PDF report to send to the site owner

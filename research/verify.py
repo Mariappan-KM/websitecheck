@@ -13,6 +13,7 @@ Writes findings.json and ../preview/findings.js (loaded by the dashboard).
 import json, re, sys, time, gzip, zlib, ssl, urllib.request, urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
+import llm as L
 
 BROWSER = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
 GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
@@ -333,6 +334,13 @@ def verify(cand):
     else:
         r["state"] = {"Was hacked (spam gone now)": "was_hacked"}.get(r["verdict"], "excluded" if r["verdict"].startswith("Not a lead") else "review")
     r["india"] = d.endswith(".in") or len([x for x in sig if x != "Place: India"]) >= 2
+    if L.enabled() and not dead and not r["verdict"].startswith("Not a lead"):        # optional second opinion, never confirms
+        r = L.apply_opinion(r, L.page_opinion(d, page_url, page_title, page, home_title))
+        biz = L.extract_business(profile_html)
+        if biz and "error" not in biz:
+            r["llm_business"] = biz
+            if not r["phones"] and biz["phone"]: r["phones"] = [biz["phone"]]
+            if not r["emails"] and biz["email"]: r["emails"] = [biz["email"]]
     return r
 
 # Shared hosting / free-site platforms: a hit there is a throwaway site, not a business owner.
@@ -401,7 +409,7 @@ def main():
 def recheck_only():
     """Re-apply post_check to an existing findings.json without re-fetching."""
     cands = {}
-    for fn in ("candidates.json", "candidates_cc.json", "candidates_snowball.json"):
+    for fn in ("candidates.json", "candidates_cc.json", "candidates_snowball.json", "candidates_assets.json", "candidates_sameip.json"):
         try: cands.update({c["domain"]: c for c in json.load(open(fn, encoding="utf-8"))})
         except FileNotFoundError: pass
     out = [post_check(r, cands.get(r["domain"], {"url": r.get("page_url"), "title": r.get("urlscan_title")}))

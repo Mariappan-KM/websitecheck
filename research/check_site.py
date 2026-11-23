@@ -73,13 +73,13 @@ def urlscan_sightings(d):
 def local_sightings(d):
     """Earlier records of this domain in our own data (search candidates / results)."""
     out = []
-    for fn in ("candidates_all.json", "candidates.json", "candidates_cc.json", "candidates_snowball.json"):
+    for fn in ("candidates_all.json", "candidates.json", "candidates_cc.json", "candidates_snowball.json", "candidates_assets.json", "candidates_sameip.json"):
         try: rows = json.load(open(os.path.join(ROOT, fn), encoding="utf-8"))
         except Exception: continue
         for c in rows:
             if c.get("domain") == d and c.get("url"):
                 src = c.get("source") or "urlscan"
-                out.append({"source": "commoncrawl" if src == "commoncrawl" else "urlscan", "url": c["url"], "title": c.get("title") or "",
+                out.append({"source": {"commoncrawl": "commoncrawl", "sameip": "sitewatch"}.get(src, "urlscan"), "url": c["url"], "title": c.get("title") or "",
                             "lang": (c.get("cc_langs") or "").split(",")[0] or None, "time": (c.get("scan_time") or "")[:10],
                             "link": c.get("urlscan_result"), "screenshot": c.get("urlscan_screenshot"), "from": fn})
     seen, uniq = set(), []
@@ -213,6 +213,7 @@ def main():
     r = V.post_check(V.verify(cand), cand)
     if not best:
         r["verdict"], r["state"] = ("Clean (no spam found)", "clean") if home["status"] not in (0,) and home["status"] < 500 else (r["verdict"], r["state"])
+        r = V.L.apply_opinion(r, r.get("llm"))       # optional LLM: English spam the language check cannot see -> Review
     r.update({"source": "manual-check", "check_time": time.strftime("%Y-%m-%d %H:%M:%S"), "check_target": sys.argv[1],
               "pages_checked": [{"url": p["url"], "title": p["title"], "lang": p["lang"], "status": p["status"], "suspicious": p["suspicious"], "brand": p.get("brand")} for p in pages],
               "spam_pages": sum(1 for p in pages if p["suspicious"] >= 2),
